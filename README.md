@@ -18,17 +18,17 @@ Module tính khuyến mại cho đơn hàng dựa trên 4 biến đầu vào:
 Kiemthu/
 ├── src/
 │   ├── __init__.py
-│   └── promotion.py            # Module tính khuyến mại (6 quy tắc)
+│   └── promotion.py            
 ├── tests/
 │   ├── __init__.py
-│   ├── conftest.py              # Cấu hình pytest (thêm src/ vào path)
-│   ├── test_boundary.py         # 15 ca kiểm thử BVA
-│   └── test_decision_table.py   # 14 ca kiểm thử Decision Table
+│   ├── conftest.py              
+│   ├── test_boundary.py        
+│   └── test_decision_table.py   
 ├── docs/
-│   └── report.md                # Báo cáo bài tập lớn
-├── requirements.txt             # Dependencies (pytest)
+│   └── report.md               
+├── requirements.txt             
 ├── .gitignore
-└── README.md                    # File này
+└── README.md                   
 ```
 
 ## Cài đặt & Chạy
