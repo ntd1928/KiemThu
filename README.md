@@ -73,5 +73,5 @@ python3 -m pytest tests/test_decision_table.py -v
 ## Kết quả
 
 ```
-29 passed in 0.05s ✅
+29 passed in 0.05s 
 ```
