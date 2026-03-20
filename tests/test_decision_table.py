@@ -1,39 +1,3 @@
-"""
-Kiểm thử bảng quyết định (Decision Table Testing)
-===================================================
-Cố định: order_value = 3.000.000 (R1 = 10% giảm giá cơ bản)
-
-3 Điều kiện (nhị phân):
-  C1: Hạng thành viên = Kim cương?  (T → +5%, F → Bạc +0%)
-  C2: Phương thức thanh toán = Ví điện tử?  (T → +2%, F → Tiền mặt +0%)
-  C3: Thời điểm = Flash Sale?  (T → +5%, F → +0%)
-
-4 Hành động:
-  A1: Cộng thêm 5% (Kim cương)
-  A2: Cộng thêm 2% (Ví điện tử)
-  A3: Cộng thêm 5% (Flash Sale)
-  A4: Miễn phí vận chuyển (Freeship) – khi C1=T VÀ C2=T VÀ order≥2tr
-
-Bảng quyết định đầy đủ (2³ = 8 rules):
-┌──────────────────┬─────┬─────┬─────┬─────┬─────┬─────┬─────┬─────┐
-│                  │ R1  │ R2  │ R3  │ R4  │ R5  │ R6  │ R7  │ R8  │
-├──────────────────┼─────┼─────┼─────┼─────┼─────┼─────┼─────┼─────┤
-│ C1: Kim cương?   │  F  │  F  │  F  │  F  │  T  │  T  │  T  │  T  │
-│ C2: Ví điện tử?  │  F  │  F  │  T  │  T  │  F  │  F  │  T  │  T  │
-│ C3: Flash Sale?  │  F  │  T  │  F  │  T  │  F  │  T  │  F  │  T  │
-├──────────────────┼─────┼─────┼─────┼─────┼─────┼─────┼─────┼─────┤
-│ A1: +5% (KC)     │     │     │     │     │  ✓  │  ✓  │  ✓  │  ✓  │
-│ A2: +2% (VĐT)    │     │     │  ✓  │  ✓  │     │     │  ✓  │  ✓  │
-│ A3: +5% (FS)     │     │  ✓  │     │  ✓  │     │  ✓  │     │  ✓  │
-│ A4: Freeship     │     │     │     │     │     │     │  ✓  │  ✓  │
-├──────────────────┼─────┼─────┼─────┼─────┼─────┼─────┼─────┼─────┤
-│ Tổng % giảm      │ 10% │ 15% │ 12% │ 17% │ 15% │ 20% │ 17% │ 22% │
-└──────────────────┴─────┴─────┴─────┴─────┴─────┴─────┴─────┴─────┘
-
-Bổ sung: 2 ca kiểm thử cho hạng Vàng (+3%) để đảm bảo phủ R2.
-Tổng: 10 ca kiểm thử.
-"""
-
 import pytest
 from promotion import calculate_promotion
 
@@ -49,86 +13,50 @@ def expected_final(discount_percent):
 
 
 # ============================================================
-# 8 RULES TỪ BẢNG QUYẾT ĐỊNH
+# R1' – R4': HẠNG KIM CƯƠNG (C1=T, C2=–)
 # ============================================================
 
-class TestDecisionTable_8Rules:
-    """8 ca kiểm thử tương ứng 8 rules từ bảng quyết định."""
+class TestDT_KimCuong:
+    """Rules R1'–R4': Hạng Kim cương, C2 là Indifferent (–)."""
 
-    def test_DT01_R1_bac_tienmat_thuong(self):
+    def test_DT01_R1_kimcuong_tienmat_thuong(self):
         """
-        DT-01 | Rule 1: C1=F, C2=F, C3=F
-        Bạc + Tiền mặt + Giờ thường → 10% + 0 + 0 + 0 = 10%, No freeship
-        """
-        result = calculate_promotion(ORDER, "Bạc", "Tiền mặt", False)
-        assert result["discount_percent"] == 10
-        assert result["freeship"] is False
-        assert result["final_price"] == expected_final(10)
-
-    def test_DT02_R2_bac_tienmat_flash(self):
-        """
-        DT-02 | Rule 2: C1=F, C2=F, C3=T
-        Bạc + Tiền mặt + Flash Sale → 10% + 0 + 0 + 5 = 15%, No freeship
-        """
-        result = calculate_promotion(ORDER, "Bạc", "Tiền mặt", True)
-        assert result["discount_percent"] == 15
-        assert result["freeship"] is False
-        assert result["final_price"] == expected_final(15)
-
-    def test_DT03_R3_bac_vi_thuong(self):
-        """
-        DT-03 | Rule 3: C1=F, C2=T, C3=F
-        Bạc + Ví điện tử + Giờ thường → 10% + 0 + 2 + 0 = 12%, No freeship
-        """
-        result = calculate_promotion(ORDER, "Bạc", "Ví điện tử", False)
-        assert result["discount_percent"] == 12
-        assert result["freeship"] is False
-        assert result["final_price"] == expected_final(12)
-
-    def test_DT04_R4_bac_vi_flash(self):
-        """
-        DT-04 | Rule 4: C1=F, C2=T, C3=T
-        Bạc + Ví điện tử + Flash Sale → 10% + 0 + 2 + 5 = 17%, No freeship
-        """
-        result = calculate_promotion(ORDER, "Bạc", "Ví điện tử", True)
-        assert result["discount_percent"] == 17
-        assert result["freeship"] is False
-        assert result["final_price"] == expected_final(17)
-
-    def test_DT05_R5_kimcuong_tienmat_thuong(self):
-        """
-        DT-05 | Rule 5: C1=T, C2=F, C3=F
-        Kim cương + Tiền mặt + Giờ thường → 10% + 5 + 0 + 0 = 15%, No freeship
+        DT-01 | R1': C1=T, C2=–, C3=F, C4=F
+        Kim cương + Tiền mặt + Giờ thường
+        Discount: 10% (base) + 5% (E1) = 15%, Freeship: No
         """
         result = calculate_promotion(ORDER, "Kim cương", "Tiền mặt", False)
         assert result["discount_percent"] == 15
         assert result["freeship"] is False
         assert result["final_price"] == expected_final(15)
 
-    def test_DT06_R6_kimcuong_tienmat_flash(self):
+    def test_DT02_R2_kimcuong_tienmat_flash(self):
         """
-        DT-06 | Rule 6: C1=T, C2=F, C3=T
-        Kim cương + Tiền mặt + Flash Sale → 10% + 5 + 0 + 5 = 20%, No freeship
+        DT-02 | R2': C1=T, C2=–, C3=F, C4=T
+        Kim cương + Tiền mặt + Flash Sale
+        Discount: 10% + 5% (E1) + 5% (E4) = 20%, Freeship: No
         """
         result = calculate_promotion(ORDER, "Kim cương", "Tiền mặt", True)
         assert result["discount_percent"] == 20
         assert result["freeship"] is False
         assert result["final_price"] == expected_final(20)
 
-    def test_DT07_R7_kimcuong_vi_thuong(self):
+    def test_DT03_R3_kimcuong_vi_thuong(self):
         """
-        DT-07 | Rule 7: C1=T, C2=T, C3=F
-        Kim cương + Ví điện tử + Giờ thường → 10% + 5 + 2 + 0 = 17%, Freeship
+        DT-03 | R3': C1=T, C2=–, C3=T, C4=F
+        Kim cương + Ví điện tử + Giờ thường
+        Discount: 10% + 5% (E1) + 2% (E3) = 17%, Freeship: Yes (E5)
         """
         result = calculate_promotion(ORDER, "Kim cương", "Ví điện tử", False)
         assert result["discount_percent"] == 17
         assert result["freeship"] is True
         assert result["final_price"] == expected_final(17)
 
-    def test_DT08_R8_kimcuong_vi_flash(self):
+    def test_DT04_R4_kimcuong_vi_flash(self):
         """
-        DT-08 | Rule 8: C1=T, C2=T, C3=T
-        Kim cương + Ví điện tử + Flash Sale → 10% + 5 + 2 + 5 = 22%, Freeship
+        DT-04 | R4': C1=T, C2=–, C3=T, C4=T
+        Kim cương + Ví điện tử + Flash Sale
+        Discount: 10% + 5% (E1) + 2% (E3) + 5% (E4) = 22%, Freeship: Yes (E5)
         """
         result = calculate_promotion(ORDER, "Kim cương", "Ví điện tử", True)
         assert result["discount_percent"] == 22
@@ -137,24 +65,50 @@ class TestDecisionTable_8Rules:
 
 
 # ============================================================
-# BỔ SUNG: HẠNG VÀNG (+3%) – Coverage R2
+# R5' – R8': HẠNG VÀNG (C1=F, C2=T)
 # ============================================================
 
-class TestDecisionTable_Vang:
-    """Bổ sung ca kiểm thử cho hạng Vàng để phủ đầy đủ quy tắc R2."""
+class TestDT_Vang:
+    """Rules R5'–R8': Hạng Vàng."""
 
-    def test_DT09_vang_tienmat_thuong(self):
+    def test_DT05_R5_vang_tienmat_thuong(self):
         """
-        DT-09 | Vàng + Tiền mặt + Giờ thường → 10% + 3 + 0 + 0 = 13%
+        DT-05 | R5': C1=F, C2=T, C3=F, C4=F
+        Vàng + Tiền mặt + Giờ thường
+        Discount: 10% + 3% (E2) = 13%, Freeship: No
         """
         result = calculate_promotion(ORDER, "Vàng", "Tiền mặt", False)
         assert result["discount_percent"] == 13
         assert result["freeship"] is False
         assert result["final_price"] == expected_final(13)
 
-    def test_DT10_vang_vi_flash(self):
+    def test_DT06_R6_vang_tienmat_flash(self):
         """
-        DT-10 | Vàng + Ví điện tử + Flash Sale → 10% + 3 + 2 + 5 = 20%
+        DT-06 | R6': C1=F, C2=T, C3=F, C4=T
+        Vàng + Tiền mặt + Flash Sale
+        Discount: 10% + 3% (E2) + 5% (E4) = 18%, Freeship: No
+        """
+        result = calculate_promotion(ORDER, "Vàng", "Tiền mặt", True)
+        assert result["discount_percent"] == 18
+        assert result["freeship"] is False
+        assert result["final_price"] == expected_final(18)
+
+    def test_DT07_R7_vang_vi_thuong(self):
+        """
+        DT-07 | R7': C1=F, C2=T, C3=T, C4=F
+        Vàng + Ví điện tử + Giờ thường
+        Discount: 10% + 3% (E2) + 2% (E3) = 15%, Freeship: No
+        """
+        result = calculate_promotion(ORDER, "Vàng", "Ví điện tử", False)
+        assert result["discount_percent"] == 15
+        assert result["freeship"] is False
+        assert result["final_price"] == expected_final(15)
+
+    def test_DT08_R8_vang_vi_flash(self):
+        """
+        DT-08 | R8': C1=F, C2=T, C3=T, C4=T
+        Vàng + Ví điện tử + Flash Sale
+        Discount: 10% + 3% (E2) + 2% (E3) + 5% (E4) = 20%, Freeship: No
         """
         result = calculate_promotion(ORDER, "Vàng", "Ví điện tử", True)
         assert result["discount_percent"] == 20
@@ -163,45 +117,55 @@ class TestDecisionTable_Vang:
 
 
 # ============================================================
-# BỔ SUNG: KIỂM TRA CAP 25% (R6)
+# R9' – R10': HẠNG BẠC (C1=F, C2=F, C4=–)
 # ============================================================
 
-class TestDecisionTable_Cap25:
-    """Kiểm tra giới hạn giảm giá tối đa 25% (R6)."""
+class TestDT_Bac:
+    """Rules R9'–R10': Hạng Bạc, C4 là Indifferent (–)."""
 
-    def test_DT11_cap25_scenario(self):
+    def test_DT09_R9_bac_tienmat(self):
         """
-        DT-11 | Tạo tình huống tổng giảm > 25%
-        order_value=3.000.000 (10%) + Kim cương (5%) + Ví điện tử (2%) + Flash Sale (5%)
-        = 22% → chưa bị cap (< 25%)
+        DT-09 | R9': C1=F, C2=F, C3=F, C4=–
+        Bạc + Tiền mặt + (không quan tâm Flash Sale)
+        Discount: 10% + 0% = 10%, Freeship: No
+        Chọn C4=F làm đại diện.
+        """
+        result = calculate_promotion(ORDER, "Bạc", "Tiền mặt", False)
+        assert result["discount_percent"] == 10
+        assert result["freeship"] is False
+        assert result["final_price"] == expected_final(10)
 
-        Để test cap, thử một giá trị order ở mức 5% cơ bản nhưng cộng hết bonus:
-        Thực tế với đặc tả hiện tại, max = 10+5+2+5 = 22% < 25%.
-        Test này xác nhận rằng hệ thống KHÔNG cap khi tổng < 25%.
+    def test_DT10_R10_bac_vi(self):
         """
-        result = calculate_promotion(ORDER, "Kim cương", "Ví điện tử", True)
-        assert result["discount_percent"] == 22
-        assert result["discount_percent"] <= 25  # Không vượt cap
+        DT-10 | R10': C1=F, C2=F, C3=T, C4=–
+        Bạc + Ví điện tử + (không quan tâm Flash Sale)
+        Discount: 10% + 2% (E3) = 12%, Freeship: No
+        Chọn C4=F làm đại diện.
+        """
+        result = calculate_promotion(ORDER, "Bạc", "Ví điện tử", False)
+        assert result["discount_percent"] == 12
+        assert result["freeship"] is False
+        assert result["final_price"] == expected_final(12)
 
 
 # ============================================================
 # BỔ SUNG: KIỂM TRA ĐẦU VÀO KHÔNG HỢP LỆ
 # ============================================================
 
-class TestDecisionTable_InvalidInput:
-    """Kiểm tra xử lý đầu vào không hợp lệ cho các biến phi số."""
+class TestDT_Invalid:
+    """Ca kiểm thử đầu vào không hợp lệ."""
 
-    def test_DT12_invalid_tier(self):
-        """DT-12 | Hạng thành viên không tồn tại → Error"""
+    def test_DT11_invalid_tier(self):
+        """DT-11 | Hạng thành viên không tồn tại → Error"""
         result = calculate_promotion(ORDER, "Platinum", "Tiền mặt", False)
         assert result["error"] is True
 
-    def test_DT13_invalid_payment(self):
-        """DT-13 | Phương thức thanh toán không hợp lệ → Error"""
+    def test_DT12_invalid_payment(self):
+        """DT-12 | Phương thức thanh toán không hợp lệ → Error"""
         result = calculate_promotion(ORDER, "Bạc", "Bitcoin", False)
         assert result["error"] is True
 
-    def test_DT14_invalid_flash_sale(self):
-        """DT-14 | is_flash_sale không phải bool → Error"""
+    def test_DT13_invalid_flash_sale(self):
+        """DT-13 | is_flash_sale không phải bool → Error"""
         result = calculate_promotion(ORDER, "Bạc", "Tiền mặt", "yes")
         assert result["error"] is True

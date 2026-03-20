@@ -1,48 +1,13 @@
-"""
-Module Khuyến mại (Promotional Module)
-Tính toán giảm giá và phí vận chuyển dựa trên:
-  - Tổng giá trị đơn hàng (order_value)
-  - Hạng thành viên (member_tier)
-  - Phương thức thanh toán (payment_method)
-  - Thời điểm mua hàng (is_flash_sale)
-"""
-
-# ============================================================
-# Hằng số cấu hình
-# ============================================================
 VALID_TIERS = {"Bạc", "Vàng", "Kim cương"}
 VALID_PAYMENTS = {"Tiền mặt", "Ví điện tử", "Chuyển khoản"}
 
 ORDER_VALUE_MIN = 0
 ORDER_VALUE_MAX = 50_000_000
 
-MAX_DISCOUNT_PERCENT = 25  # Giới hạn giảm giá tối đa (R6)
+MAX_DISCOUNT_PERCENT = 25  
 
 
 def calculate_promotion(order_value, member_tier, payment_method, is_flash_sale):
-    """
-    Tính toán khuyến mại cho đơn hàng.
-
-    Tham số:
-        order_value  (int)  : Tổng giá trị đơn hàng (VNĐ), 0 ≤ X ≤ 50.000.000
-        member_tier  (str)  : Hạng thành viên {"Bạc", "Vàng", "Kim cương"}
-        payment_method (str): Phương thức thanh toán {"Tiền mặt", "Ví điện tử", "Chuyển khoản"}
-        is_flash_sale (bool): True nếu mua trong Flash Sale
-
-    Trả về:
-        dict: {
-            "discount_percent": int,   # Phần trăm giảm giá (đã cap 25%)
-            "freeship":         bool,   # Có miễn phí vận chuyển không
-            "final_price":      int,    # Giá sau giảm
-            "message":          str     # Thông báo kết quả
-        }
-        Hoặc nếu đầu vào không hợp lệ:
-        dict: {
-            "error":   True,
-            "message": str
-        }
-    """
-
     # --------------------------------------------------------
     # VALIDATE ĐẦU VÀO
     # --------------------------------------------------------

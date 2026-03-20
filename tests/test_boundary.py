@@ -1,19 +1,3 @@
-"""
-Kiểm thử giá trị biên (Boundary Value Analysis - BVA)
-=====================================================
-Biến kiểm thử : order_value (int, 0 ≤ X ≤ 50.000.000)
-Biến cố định  : member_tier="Bạc", payment_method="Tiền mặt", is_flash_sale=False
-                 → Chỉ có R1 (giảm theo giá trị đơn) tác động.
-
-Miền con:
-  Miền 1: [0, 499.999]           → 0%
-  Miền 2: [500.000, 2.000.000]   → 5%
-  Miền 3: [2.000.001, 50.000.000] → 10%
-
-Chiến lược: BVA thường (4n+1) + BVA mạnh (6n+1) bổ sung min-, max+
-Tổng: 15 ca kiểm thử
-"""
-
 import pytest
 from promotion import calculate_promotion
 

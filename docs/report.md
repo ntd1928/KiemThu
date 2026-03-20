@@ -1,6 +1,5 @@
 # BÁO CÁO BÀI TẬP LỚN
-## Môn: Kiểm thử phần mềm
-## Đề tài: Kiểm thử Hệ thống Khuyến mại (Promotional Module)
+## Bài toán: Kiểm thử Hệ thống Khuyến mại (Promotional Module)
 
 ---
 
@@ -45,135 +44,205 @@ Nếu đầu vào không hợp lệ → `{"error": true, "message": "..."}`.
 
 ### 2.1. Kiểm thử giá trị biên (Boundary Value Analysis – BVA)
 
-#### Cơ sở lý thuyết
+#### 2.1.1. Cơ sở lý thuyết
 
-- **Giả thiết khiếm khuyết đơn:** Lỗi thường xảy ra do một sai sót đơn lẻ tại ranh giới của miền dữ liệu.
-- **Chiến lược 5 điểm:** Với mỗi ngưỡng biên, lấy 5 giá trị: **min, min+, nom, max-, max**.
-- **Công thức:** BVA thường: **4n + 1** ca kiểm thử; BVA mạnh: **6n + 1** (bổ sung min-, max+).
+- **Định nghĩa:** Kiểm thử giá trị biên là kỹ thuật kiểm thử hộp đen tập trung vào các giá trị tại ranh giới (biên) của miền dữ liệu đầu vào, nơi lỗi thường xảy ra nhiều nhất.
+- **Giả thiết khiếm khuyết đơn (Single fault assumption):** Lỗi thường xảy ra do một sai sót đơn lẻ, không cần sự kết hợp của nhiều sai sót cùng lúc.
+- **Chiến lược 5 điểm:** Với mỗi biến, lấy 5 giá trị đặc trưng: **min, min+, nom, max-, max**.
+- **Công thức số ca kiểm thử:**
+  - BVA thường (Normal BVA): **4n + 1** (n = số biến)
+  - BVA mạnh (Robust BVA): **6n + 1** (bổ sung **min-** và **max+** nằm ngoài miền xác định)
 
-#### Biến kiểm thử
+#### 2.1.2. Xác định biến kiểm thử
 
-- **Biến thay đổi:** `order_value` (biến liên tục, có 2 ngưỡng nội bộ: 500.000 và 2.000.000)
-- **Biến cố định:** `member_tier="Bạc"`, `payment_method="Tiền mặt"`, `is_flash_sale=False`
-  - → Chỉ có R1 tác động, loại bỏ ảnh hưởng của R2, R3, R4.
+- **Biến thay đổi:** `order_value` – biến liên tục với 3 miền con và 2 điểm biên nội bộ (500.000 và 2.000.000)
+- **Biến cố định (giả thiết khiếm khuyết đơn):**
+  - `member_tier = "Bạc"` → R2 = +0%
+  - `payment_method = "Tiền mặt"` → R3 = +0%
+  - `is_flash_sale = False` → R4 = +0%
+  - → Chỉ có R1 (giảm theo giá trị đơn hàng) tác động đến kết quả.
 
-#### Phân hoạch miền con
+#### 2.1.3. Phân hoạch miền con (Equivalence Partitioning)
 
-| Miền | Khoảng giá trị | Expected discount |
-|------|----------------|-------------------|
-| Miền 1 | [0, 499.999] | 0% |
-| Miền 2 | [500.000, 2.000.000] | 5% |
-| Miền 3 | [2.000.001, 50.000.000] | 10% |
+Trước khi áp dụng BVA, cần phân hoạch miền dữ liệu thành các lớp tương đương:
 
-#### Bảng ca kiểm thử BVA
+| Miền | Khoảng giá trị | Mức giảm giá | Đặc điểm |
+|------|----------------|-------------|----------|
+| **Miền không hợp lệ (dưới)** | X < 0 | Error | Ngoài miền xác định |
+| **Miền 1** (hợp lệ) | [0, 499.999] | 0% | Đơn hàng nhỏ |
+| **Miền 2** (hợp lệ) | [500.000, 2.000.000] | 5% | Đơn hàng trung bình |
+| **Miền 3** (hợp lệ) | [2.000.001, 50.000.000] | 10% | Đơn hàng lớn |
+| **Miền không hợp lệ (trên)** | X > 50.000.000 | Error | Ngoài miền xác định |
 
-**Ngưỡng biên 1: Ranh giới 500.000**
+**Kiểm tra tính đúng đắn phân hoạch:**
+- Các miền con không chồng lấn (giao = ∅)
+- Hợp các miền con = toàn bộ miền dữ liệu
+- Không có miền con nào rỗng
 
-| ID | Giá trị order_value | Loại điểm | Expected discount | Expected final_price |
-|----|---------------------|-----------|-------------------|---------------------|
-| BVA-01 | 0 | min | 0% | 0 |
-| BVA-02 | 250.000 | nom (vùng 1) | 0% | 250.000 |
-| BVA-03 | 499.999 | max- (biên 500k) | 0% | 499.999 |
-| BVA-04 | 500.000 | min (biên 500k) | 5% | 475.000 |
-| BVA-05 | 500.001 | min+ (biên 500k) | 5% | 475.001 |
+#### 2.1.4. Xác định các điểm biên
 
-**Ngưỡng biên 2: Ranh giới 2.000.000**
+Từ phân hoạch trên, xác định **4 điểm biên** của biến `order_value`:
 
-| ID | Giá trị order_value | Loại điểm | Expected discount | Expected final_price |
-|----|---------------------|-----------|-------------------|---------------------|
-| BVA-06 | 1.250.000 | nom (vùng 2) | 5% | 1.187.500 |
-| BVA-07 | 1.999.999 | max- (biên 2tr) | 5% | 1.900.000 |
-| BVA-08 | 2.000.000 | max (biên 2tr) | 5% | 1.900.000 |
-| BVA-09 | 2.000.001 | min (vùng 3) | 10% | 1.800.001 |
-| BVA-10 | 2.000.002 | min+ (vùng 3) | 10% | 1.800.002 |
+| Điểm biên | Giá trị | Ý nghĩa |
+|-----------|---------|---------|
+| b₁ | 0 | Biên dưới tổng thể (min) |
+| b₂ | 500.000 | Ranh giới Miền 1 ↔ Miền 2 |
+| b₃ | 2.000.000 / 2.000.001 | Ranh giới Miền 2 ↔ Miền 3 |
+| b₄ | 50.000.000 | Biên trên tổng thể (max) |
 
-**Ngưỡng biên 3: Biên min/max tổng thể**
+#### 2.1.5. Bảng ca kiểm thử BVA
 
-| ID | Giá trị order_value | Loại điểm | Expected discount | Expected final_price |
-|----|---------------------|-----------|-------------------|---------------------|
-| BVA-11 | 25.000.000 | nom (vùng 3) | 10% | 22.500.000 |
-| BVA-12 | 49.999.999 | max- | 10% | 45.000.000 |
-| BVA-13 | 50.000.000 | max | 10% | 45.000.000 |
+**Bảng A – BVA thường (Normal BVA): 13 ca kiểm thử**
 
-**BVA mạnh – Giá trị ngoài miền**
+| ID | Giá trị | Loại điểm | Miền | Expected discount | Expected final_price | Giải thích |
+|----|---------|-----------|------|:-----------------:|:--------------------:|------------|
+| BVA-01 | 0 | **min** | Miền 1 | 0% | 0 | Giá trị nhỏ nhất hợp lệ |
+| BVA-02 | 250.000 | **nom** | Miền 1 | 0% | 250.000 | Giá trị đại diện vùng 1 |
+| BVA-03 | 499.999 | **max-** | Miền 1 | 0% | 499.999 | Ngay dưới biên b₂ |
+| BVA-04 | 500.000 | **min** | Miền 2 | 5% | 475.000 | Tại biên b₂ (bắt đầu giảm 5%) |
+| BVA-05 | 500.001 | **min+** | Miền 2 | 5% | 475.001 | Ngay trên biên b₂ |
+| BVA-06 | 1.250.000 | **nom** | Miền 2 | 5% | 1.187.500 | Giá trị đại diện vùng 2 |
+| BVA-07 | 1.999.999 | **max-** | Miền 2 | 5% | 1.900.000 | Ngay dưới biên b₃ |
+| BVA-08 | 2.000.000 | **max** | Miền 2 | 5% | 1.900.000 | Tại biên b₃ (vẫn là 5%) |
+| BVA-09 | 2.000.001 | **min** | Miền 3 | 10% | 1.800.001 | Ngay trên biên b₃ (chuyển sang 10%) |
+| BVA-10 | 2.000.002 | **min+** | Miền 3 | 10% | 1.800.002 | Xác nhận vùng 3 |
+| BVA-11 | 25.000.000 | **nom** | Miền 3 | 10% | 22.500.000 | Giá trị đại diện vùng 3 |
+| BVA-12 | 49.999.999 | **max-** | Miền 3 | 10% | 45.000.000 | Cận biên trên tổng thể |
+| BVA-13 | 50.000.000 | **max** | Miền 3 | 10% | 45.000.000 | Giá trị lớn nhất hợp lệ |
 
-| ID | Giá trị order_value | Loại điểm | Expected |
-|----|---------------------|-----------|----------|
-| BVA-R1 | -1 | min- | Error |
-| BVA-R2 | 50.000.001 | max+ | Error |
+**Bảng B – BVA mạnh (Robust BVA): Bổ sung 2 ca kiểm thử ngoài miền**
 
-**Tổng: 15 ca kiểm thử BVA**
+| ID | Giá trị | Loại điểm | Expected | Giải thích |
+|----|---------|-----------|----------|------------|
+| BVA-R1 | -1 | **min-** | Error | Dưới biên dưới → kiểm tra validate |
+| BVA-R2 | 50.000.001 | **max+** | Error | Trên biên trên → kiểm tra validate |
+
+**Tổng cộng: 13 + 2 = 15 ca kiểm thử BVA**
 
 ---
 
 ### 2.2. Kiểm thử bảng quyết định (Decision Table Testing)
 
-#### Cơ sở lý thuyết
+#### 2.2.1. Cơ sở lý thuyết
 
-- Bảng quyết định phù hợp khi các biến đầu vào **phụ thuộc lẫn nhau** trong việc xác định đầu ra.
-- Cấu trúc bảng gồm 4 phần: Điều kiện, Giá trị điều kiện (T/F), Hành động, Trạng thái xảy ra hành động.
-- Mỗi cột (rule) trong bảng được chuyển thành một ca kiểm thử.
+- **Định nghĩa:** Bảng quyết định là kỹ thuật kiểm thử hộp đen dùng khi đầu ra phụ thuộc vào sự kết hợp của nhiều điều kiện đầu vào.
+- **Cấu trúc bảng:** Gồm 4 phần – Điều kiện (Conditions), Giá trị điều kiện (T/F/-), Hành động (Actions), Trạng thái hành động (✓).
+- **Dấu "–" (Indifferent):** Điều kiện không ảnh hưởng đến hành động trong rule đó.
+- **Mỗi cột (rule)** trong bảng cuối cùng được chuyển thành **một ca kiểm thử**.
 
-#### Quy trình 8 bước
+#### 2.2.2. Quy trình 8 bước
 
-**Bước 1-2: Xác định và liệt kê Điều kiện & Hành động**
+##### Bước 1: Xác định các điều kiện và hành động
 
-Cố định `order_value = 3.000.000` (R1 = 10% giảm giá cơ bản).
+Cố định `order_value = 3.000.000` (thuộc Miền 3, R1 = 10% giảm giá cơ bản).
 
-| Ký hiệu | Điều kiện |
-|----------|-----------|
-| C1 | Hạng thành viên = Kim cương? |
-| C2 | Phương thức thanh toán = Ví điện tử? |
-| C3 | Thời điểm = Flash Sale? |
+**Điều kiện:**
+
+| Ký hiệu | Điều kiện | Giá trị |
+|----------|-----------|---------|
+| C1 | Hạng Kim cương? | T / F |
+| C2 | Hạng Vàng? | T / F |
+| C3 | Thanh toán bằng Ví điện tử? | T / F |
+| C4 | Mua trong Flash Sale? | T / F |
+
+*Ràng buộc: C1 và C2 không thể đồng thời True (loại bỏ tổ hợp bất khả thi).*
+*Nếu C1=F và C2=F → Hạng Bạc.*
+
+**Hành động:**
 
 | Ký hiệu | Hành động |
 |----------|-----------|
-| A1 | Cộng thêm 5% giảm giá (Kim cương) |
-| A2 | Cộng thêm 2% giảm giá (Ví điện tử) |
-| A3 | Cộng thêm 5% giảm giá (Flash Sale) |
-| A4 | Miễn phí vận chuyển (Freeship) |
+| E1 | Cộng thêm 5% giảm giá (Kim cương) |
+| E2 | Cộng thêm 3% giảm giá (Vàng) |
+| E3 | Cộng thêm 2% giảm giá (Ví điện tử) |
+| E4 | Cộng thêm 5% giảm giá (Flash Sale) |
+| E5 | Miễn phí vận chuyển (Freeship) |
 
-**Bước 3: Tính số tổ hợp**
+##### Bước 2: Liệt kê vào bảng
 
-3 điều kiện nhị phân → 2³ = **8 rules**
+Bảng cấu trúc gồm 4 điều kiện C1–C4, 5 hành động E1–E5, và các cột rule.
 
-**Bước 4-7: Điền giá trị, kiểm tra gộp cột, thêm hành động**
+##### Bước 3: Tính số sự kết hợp
 
-| | R1 | R2 | R3 | R4 | R5 | R6 | R7 | R8 |
-|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| **C1: Kim cương?** | F | F | F | F | T | T | T | T |
-| **C2: Ví điện tử?** | F | F | T | T | F | F | T | T |
-| **C3: Flash Sale?** | F | T | F | T | F | T | F | T |
-| | | | | | | | | |
-| **A1: +5% (KC)** | | | | | ✓ | ✓ | ✓ | ✓ |
-| **A2: +2% (VĐT)** | | | ✓ | ✓ | | | ✓ | ✓ |
-| **A3: +5% (FS)** | | ✓ | | ✓ | | ✓ | | ✓ |
-| **A4: Freeship** | | | | | | | ✓ | ✓ |
-| **Tổng % giảm** | 10% | 15% | 12% | 17% | 15% | 20% | 17% | 22% |
+4 điều kiện nhị phân → 2⁴ = **16 tổ hợp**. Tuy nhiên C1=T ∧ C2=T là bất khả thi (không thể vừa Kim cương vừa Vàng) → loại bỏ 4 tổ hợp → còn **12 rules**.
 
-> **Kiểm tra gộp cột (Indifferent):** A4 (Freeship) phụ thuộc C1 và C2 nhưng không C3 → có thể gộp R7+R8 cho hành động A4. Tuy nhiên % giảm giá khác nhau nên giữ nguyên 8 rules để đảm bảo tính chính xác.
+##### Bước 4: Điền tất cả các sự kết hợp (Bảng đầy đủ)
 
-**Bước 8: Chuyển thành ca kiểm thử**
+| | R1 | R2 | R3 | R4 | R5 | R6 | R7 | R8 | R9 | R10 | R11 | R12 |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| **C1: Kim cương?** | T | T | T | T | F | F | F | F | F | F | F | F |
+| **C2: Vàng?** | F | F | F | F | T | T | T | T | F | F | F | F |
+| **C3: Ví điện tử?** | F | F | T | T | F | F | T | T | F | F | T | T |
+| **C4: Flash Sale?** | F | T | F | T | F | T | F | T | F | T | F | T |
 
-| TC-ID | order_value | member_tier | payment_method | is_flash_sale | Expected discount | Expected freeship | Expected final_price |
-|-------|:-----------:|:-----------:|:--------------:|:-------------:|:-----------------:|:-----------------:|:--------------------:|
-| DT-01 | 3.000.000 | Bạc | Tiền mặt | False | 10% | No | 2.700.000 |
-| DT-02 | 3.000.000 | Bạc | Tiền mặt | True | 15% | No | 2.550.000 |
-| DT-03 | 3.000.000 | Bạc | Ví điện tử | False | 12% | No | 2.640.000 |
-| DT-04 | 3.000.000 | Bạc | Ví điện tử | True | 17% | No | 2.490.000 |
-| DT-05 | 3.000.000 | Kim cương | Tiền mặt | False | 15% | No | 2.550.000 |
-| DT-06 | 3.000.000 | Kim cương | Tiền mặt | True | 20% | No | 2.400.000 |
-| DT-07 | 3.000.000 | Kim cương | Ví điện tử | False | 17% | Yes | 2.490.000 |
-| DT-08 | 3.000.000 | Kim cương | Ví điện tử | True | 22% | Yes | 2.340.000 |
+##### Bước 5: Giảm bớt – Tìm sự kết hợp Indifferent (–)
 
-**Bổ sung – Hạng Vàng (coverage R2):**
+Phân tích các hành động:
+- **E1 (+5% KC):** Chỉ phụ thuộc C1=T → C2, C3, C4 đều **–** cho hành động này
+- **E2 (+3% Vàng):** Chỉ phụ thuộc C2=T → C1, C3, C4 đều **–**
+- **E3 (+2% VĐT):** Chỉ phụ thuộc C3=T → C1, C2, C4 đều **–**
+- **E4 (+5% FS):** Chỉ phụ thuộc C4=T → C1, C2, C3 đều **–**
+- **E5 (Freeship):** Phụ thuộc C1=T **VÀ** C3=T → C2, C4 đều **–**
 
-| TC-ID | order_value | member_tier | payment_method | is_flash_sale | Expected discount | Expected freeship | Expected final_price |
-|-------|:-----------:|:-----------:|:--------------:|:-------------:|:-----------------:|:-----------------:|:--------------------:|
-| DT-09 | 3.000.000 | Vàng | Tiền mặt | False | 13% | No | 2.610.000 |
-| DT-10 | 3.000.000 | Vàng | Ví điện tử | True | 20% | No | 2.400.000 |
+Gộp các rules có cùng tập hành động, sử dụng dấu **–** cho điều kiện không ảnh hưởng:
 
-**Tổng: 10 ca kiểm thử Decision Table** (+ 4 ca kiểm thử đầu vào không hợp lệ)
+**Bảng quyết định rút gọn:**
+
+| | R1' | R2' | R3' | R4' | R5' | R6' | R7' | R8' | R9' | R10' |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| **C1: Kim cương?** | T | T | T | T | F | F | F | F | F | F |
+| **C2: Vàng?** | – | – | – | – | T | T | T | T | F | F |
+| **C3: Ví điện tử?** | F | F | T | T | F | F | T | T | F | T |
+| **C4: Flash Sale?** | F | T | F | T | F | T | F | T | – | – |
+| | | | | | | | | | | |
+| **E1: +5% (KC)** | ✓ | ✓ | ✓ | ✓ | | | | | | |
+| **E2: +3% (Vàng)** | | | | | ✓ | ✓ | ✓ | ✓ | | |
+| **E3: +2% (VĐT)** | | | ✓ | ✓ | | | ✓ | ✓ | | ✓ |
+| **E4: +5% (FS)** | | ✓ | | ✓ | | ✓ | | ✓ | | |
+| **E5: Freeship** | | | ✓ | ✓ | | | | | | |
+| | | | | | | | | | | |
+| **Tổng % giảm thêm** | +5 | +10 | +7 | +12 | +3 | +8 | +5 | +10 | +0 | +2 |
+| **Tổng % giảm (+ R1=10%)** | 15% | 20% | 17% | 22% | 13% | 18% | 15% | 20% | 10% | 12% |
+
+> **Ghi chú:**
+> - R1'–R4': Hạng Kim cương, C2 = **–** vì khi C1=T thì C2 luôn F
+> - R9'–R10': Hạng Bạc (C1=F, C2=F), C4 = **–** vì Flash Sale không ảnh hưởng đến việc xác định hạng Bạc
+> - Tất cả tổng % ≤ 25% → không bị cap bởi R6
+
+##### Bước 6: Kiểm tra độ phủ
+
+- 10 rules đã phủ tất cả tổ hợp có ý nghĩa của 4 điều kiện ✓
+- Mỗi hạng thành viên (Bạc, Vàng, Kim cương) đều có ít nhất 2 ca kiểm thử ✓
+- Hành động Freeship (E5) được kiểm tra ở R3', R4' ✓
+
+##### Bước 7: Thêm hành động vào mỗi cột
+
+Đã hoàn thành ở bảng rút gọn trên.
+
+##### Bước 8: Chuyển mỗi cột thành ca kiểm thử
+
+| TC-ID | Rule | order_value | member_tier | payment_method | is_flash_sale | Expected discount | Expected freeship | Expected final_price |
+|-------|:----:|:-----------:|:-----------:|:--------------:|:-------------:|:-----------------:|:-----------------:|:--------------------:|
+| DT-01 | R1' | 3.000.000 | Kim cương | Tiền mặt | False | 15% | No | 2.550.000 |
+| DT-02 | R2' | 3.000.000 | Kim cương | Tiền mặt | True | 20% | No | 2.400.000 |
+| DT-03 | R3' | 3.000.000 | Kim cương | Ví điện tử | False | 17% | Yes | 2.490.000 |
+| DT-04 | R4' | 3.000.000 | Kim cương | Ví điện tử | True | 22% | Yes | 2.340.000 |
+| DT-05 | R5' | 3.000.000 | Vàng | Tiền mặt | False | 13% | No | 2.610.000 |
+| DT-06 | R6' | 3.000.000 | Vàng | Tiền mặt | True | 18% | No | 2.460.000 |
+| DT-07 | R7' | 3.000.000 | Vàng | Ví điện tử | False | 15% | No | 2.550.000 |
+| DT-08 | R8' | 3.000.000 | Vàng | Ví điện tử | True | 20% | No | 2.400.000 |
+| DT-09 | R9' | 3.000.000 | Bạc | Tiền mặt | False | 10% | No | 2.700.000 |
+| DT-10 | R10' | 3.000.000 | Bạc | Ví điện tử | False | 12% | No | 2.640.000 |
+
+**Bổ sung – Ca kiểm thử đầu vào không hợp lệ:**
+
+| TC-ID | Mô tả | Expected |
+|-------|-------|----------|
+| DT-11 | Hạng không tồn tại ("Platinum") | Error |
+| DT-12 | Phương thức thanh toán không hợp lệ ("Bitcoin") | Error |
+| DT-13 | is_flash_sale không phải bool ("yes") | Error |
+
+**Tổng: 10 ca kiểm thử Decision Table + 3 ca kiểm thử invalid = 13**
 
 ---
 
@@ -182,69 +251,56 @@ Cố định `order_value = 3.000.000` (R1 = 10% giảm giá cơ bản).
 ### Chạy test
 
 ```
-$ python -m pytest test_boundary.py test_decision_table.py -v
+$ python -m pytest tests/ -v
 
 =========== test session starts ===========
-collected 29 items
+collected 28 items
 
-test_boundary.py::TestBVA_Boundary500k::test_BVA01_min_gia_tri_nho_nhat    PASSED
-test_boundary.py::TestBVA_Boundary500k::test_BVA02_nom_vung1              PASSED
-test_boundary.py::TestBVA_Boundary500k::test_BVA03_max_minus_bien_500k    PASSED
-test_boundary.py::TestBVA_Boundary500k::test_BVA04_min_bien_500k          PASSED
-test_boundary.py::TestBVA_Boundary500k::test_BVA05_min_plus_bien_500k     PASSED
-test_boundary.py::TestBVA_Boundary2M::test_BVA06_nom_vung2                PASSED
-test_boundary.py::TestBVA_Boundary2M::test_BVA07_max_minus_bien_2tr       PASSED
-test_boundary.py::TestBVA_Boundary2M::test_BVA08_max_bien_2tr             PASSED
-test_boundary.py::TestBVA_Boundary2M::test_BVA09_min_vung3                PASSED
-test_boundary.py::TestBVA_Boundary2M::test_BVA10_min_plus_vung3           PASSED
-test_boundary.py::TestBVA_BoundaryOverall::test_BVA11_nom_vung3           PASSED
-test_boundary.py::TestBVA_BoundaryOverall::test_BVA12_max_minus           PASSED
-test_boundary.py::TestBVA_BoundaryOverall::test_BVA13_max                 PASSED
-test_boundary.py::TestBVA_Robust::test_BVA_R1_min_minus                   PASSED
-test_boundary.py::TestBVA_Robust::test_BVA_R2_max_plus                    PASSED
-test_decision_table.py::TestDecisionTable_8Rules::test_DT01_R1_bac_tienmat_thuong          PASSED
-test_decision_table.py::TestDecisionTable_8Rules::test_DT02_R2_bac_tienmat_flash           PASSED
-test_decision_table.py::TestDecisionTable_8Rules::test_DT03_R3_bac_vi_thuong               PASSED
-test_decision_table.py::TestDecisionTable_8Rules::test_DT04_R4_bac_vi_flash                PASSED
-test_decision_table.py::TestDecisionTable_8Rules::test_DT05_R5_kimcuong_tienmat_thuong     PASSED
-test_decision_table.py::TestDecisionTable_8Rules::test_DT06_R6_kimcuong_tienmat_flash      PASSED
-test_decision_table.py::TestDecisionTable_8Rules::test_DT07_R7_kimcuong_vi_thuong          PASSED
-test_decision_table.py::TestDecisionTable_8Rules::test_DT08_R8_kimcuong_vi_flash           PASSED
-test_decision_table.py::TestDecisionTable_Vang::test_DT09_vang_tienmat_thuong              PASSED
-test_decision_table.py::TestDecisionTable_Vang::test_DT10_vang_vi_flash                    PASSED
-test_decision_table.py::TestDecisionTable_Cap25::test_DT11_cap25_scenario                  PASSED
-test_decision_table.py::TestDecisionTable_InvalidInput::test_DT12_invalid_tier             PASSED
-test_decision_table.py::TestDecisionTable_InvalidInput::test_DT13_invalid_payment          PASSED
-test_decision_table.py::TestDecisionTable_InvalidInput::test_DT14_invalid_flash_sale       PASSED
+tests/test_boundary.py::TestBVA_Boundary500k::test_BVA01_min          PASSED
+tests/test_boundary.py::TestBVA_Boundary500k::test_BVA02_nom          PASSED
+tests/test_boundary.py::TestBVA_Boundary500k::test_BVA03_max_minus    PASSED
+tests/test_boundary.py::TestBVA_Boundary500k::test_BVA04_min_bien     PASSED
+tests/test_boundary.py::TestBVA_Boundary500k::test_BVA05_min_plus     PASSED
+tests/test_boundary.py::TestBVA_Boundary2M::test_BVA06_nom            PASSED
+tests/test_boundary.py::TestBVA_Boundary2M::test_BVA07_max_minus      PASSED
+tests/test_boundary.py::TestBVA_Boundary2M::test_BVA08_max            PASSED
+tests/test_boundary.py::TestBVA_Boundary2M::test_BVA09_min            PASSED
+tests/test_boundary.py::TestBVA_Boundary2M::test_BVA10_min_plus       PASSED
+tests/test_boundary.py::TestBVA_BoundaryOverall::test_BVA11_nom       PASSED
+tests/test_boundary.py::TestBVA_BoundaryOverall::test_BVA12_max_minus PASSED
+tests/test_boundary.py::TestBVA_BoundaryOverall::test_BVA13_max       PASSED
+tests/test_boundary.py::TestBVA_Robust::test_BVA_R1_min_minus         PASSED
+tests/test_boundary.py::TestBVA_Robust::test_BVA_R2_max_plus          PASSED
+tests/test_decision_table.py::TestDT_KimCuong::test_DT01              PASSED
+tests/test_decision_table.py::TestDT_KimCuong::test_DT02              PASSED
+tests/test_decision_table.py::TestDT_KimCuong::test_DT03              PASSED
+tests/test_decision_table.py::TestDT_KimCuong::test_DT04              PASSED
+tests/test_decision_table.py::TestDT_Vang::test_DT05                  PASSED
+tests/test_decision_table.py::TestDT_Vang::test_DT06                  PASSED
+tests/test_decision_table.py::TestDT_Vang::test_DT07                  PASSED
+tests/test_decision_table.py::TestDT_Vang::test_DT08                  PASSED
+tests/test_decision_table.py::TestDT_Bac::test_DT09                   PASSED
+tests/test_decision_table.py::TestDT_Bac::test_DT10                   PASSED
+tests/test_decision_table.py::TestDT_Invalid::test_DT11               PASSED
+tests/test_decision_table.py::TestDT_Invalid::test_DT12               PASSED
+tests/test_decision_table.py::TestDT_Invalid::test_DT13               PASSED
 
-=========== 29 passed in 0.05s ============
+=========== 28 passed in 0.05s ============
 ```
 
 ### Bảng so sánh Expected vs Actual
 
 | TC-ID | Expected Result | Actual Result | Pass/Fail |
 |-------|:---------------:|:-------------:|:---------:|
-| BVA-01 → BVA-13 | Xem bảng mục 2.1 | Khớp | ✅ PASS |
-| BVA-R1, BVA-R2 | Error | Error | ✅ PASS |
-| DT-01 → DT-10 | Xem bảng mục 2.2 | Khớp | ✅ PASS |
-| DT-11 (cap 25%) | 22% ≤ 25% | 22% | ✅ PASS |
-| DT-12 → DT-14 | Error | Error | ✅ PASS |
+| BVA-01 → BVA-13 | Xem bảng mục 2.1.5 | Khớp |  PASS |
+| BVA-R1, BVA-R2 | Error | Error |  PASS |
+| DT-01 → DT-10 | Xem bảng mục 2.2.2 bước 8 | Khớp |  PASS |
+| DT-11 → DT-13 | Error | Error |  PASS |
 
-**Kết quả: 29/29 ca kiểm thử PASS (100%)**
+**Kết quả: 28/28 ca kiểm thử PASS (100%)**
 
 ---
 
-## 4. Cấu trúc mã nguồn
-
-```
-Kiemthu/
-├── promotion.py            # Module tính khuyến mại
-├── test_boundary.py        # 15 ca kiểm thử BVA
-├── test_decision_table.py  # 14 ca kiểm thử Decision Table
-├── report.md               # Báo cáo (file này)
-└── README.md               # Hướng dẫn sử dụng
-```
-
-## 5. Link GitHub
+## 4. Link GitHub
 
 > **Repository:** [https://github.com/ntd1928/KiemThu](https://github.com/ntd1928/KiemThu)
