@@ -1,4 +1,4 @@
-VALID_TIERS = {"Bạc", "Vàng", "Kim cương"}
+VALID_TIERS = {"Bạc", "Vàng", "Kim cương", "VIP"}
 VALID_PAYMENTS = {"Tiền mặt", "Ví điện tử", "Chuyển khoản"}
 
 ORDER_VALUE_MIN = 0
@@ -56,7 +56,7 @@ def calculate_promotion(order_value, member_tier, payment_method, is_flash_sale)
     # --------------------------------------------------------
     # R2: GIẢM THÊM THEO HẠNG THÀNH VIÊN
     # --------------------------------------------------------
-    tier_discount = {"Bạc": 0, "Vàng": 3, "Kim cương": 5}
+    tier_discount = {"Bạc": 0, "Vàng": 3, "Kim cương": 5, "VIP": 10}
     member_discount = tier_discount[member_tier]
 
     # --------------------------------------------------------
