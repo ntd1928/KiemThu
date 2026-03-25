@@ -1,8 +1,5 @@
 # Kiểm thử Hệ thống Khuyến mại (Promotional Module)
 
-Bài tập lớn môn **Kiểm thử phần mềm** – Áp dụng 2 kỹ thuật kiểm thử hộp đen:
-- **Kiểm thử giá trị biên (Boundary Value Analysis)**
-- **Bảng quyết định (Decision Table Testing)**
 
 ## Mô tả bài toán
 
